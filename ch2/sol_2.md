@@ -284,3 +284,23 @@ x*(q-y) = t * (2^w) - r
 
 
 q=y ()
+
+
+# 2.38
+
+`(2^n +1)*a`
+`(2^n)*a`
+
+# 2.43
+N=8
+M=31
+
+
+# 2.44
+a. (x = 0xff ff ff ff) (sub 1 will give a positive number)
+b. x = 011 => 3 (or x=1) (((((( This one wrong, got confused with || combined with !=))))))
+c. NOPE, overflow if x =  0x 00 00 80 00 
+d. True (all positive will have counterpart negative)
+3. False (0x80 00 00 00) does not have positive counterpart
+f. True (lhs will get converted to unsigned)
+g. True (~y => -y -1)
