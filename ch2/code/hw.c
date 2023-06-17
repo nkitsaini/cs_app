@@ -428,6 +428,28 @@ void test_lower_one_mask(){
 	munit_assert_int(lower_one_mask(17), ==, 0x1ffff);
 }
 
+/*
+* 2.69
+* Do rotating left shift. Assume 0 <= n < w
+* Examples when x = 0x12345678 and w = 32:
+* n4 —>0x23456781, n20 —>0x67812345
+*/
+unsigned rotate_left(unsigned x, int n) {
+	unsigned left_shift = x << n;
+	size_t w = sizeof(unsigned) << 3;
+	size_t l_shift_count = w - n;
+	size_t shift_count1 = l_shift_count >> 2;
+	size_t shift_count2 = l_shift_count - shift_count1;
+
+	unsigned rotated_left_shift = left_shift | ((x >> shift_count1) >> shift_count2);
+
+	return rotated_left_shift;
+}
+
+void test_rotate_left() {
+	munit_assert_uint(rotate_left(0x12345678, 4), ==, 0x23456781);
+	munit_assert_uint(rotate_left(0x12345678, 20), ==, 0x67812345);
+}
 
 
 void run_tests() {
@@ -479,6 +501,11 @@ void run_tests() {
 	test_lower_one_mask();
 	test_count += 1;
 	printf("%2d Tests passed!\n", test_count);
+
+	test_rotate_left();
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
+
 }
 
 
