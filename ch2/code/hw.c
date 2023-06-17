@@ -94,6 +94,14 @@ unsigned replace_byte(unsigned x, int i, unsigned char b) {
 	return y;
 }
 
+unsigned replace_byte_sol(unsigned x, int i, unsigned char b) {
+	unsigned mask = (((unsigned) 0xff) << (i << 3));
+	unsigned pos_byte = (((unsigned) b) << (i << 3));
+
+	return (x & ~mask) | pos_byte;
+}
+
+
 void test_replace_byte() {
 	bool failed = false;
 	if (replace_byte(0x12345678, 2, 0xAB) != 0x12AB5678) {
@@ -134,7 +142,7 @@ void test_is_any_bit_zero() {
 	assert(is_any_bit_zero(INT_MAX) == 1);
 }
 
-/* 2.61 B) Returns true if any bit of least significant byte in x is 1 */ 
+/* 2.61 C) Returns true if any bit of least significant byte in x is 1 */ 
 bool is_any_lsb_one(int x) {
 	return is_any_bit_one(x & 0xFF);
 }
@@ -147,7 +155,7 @@ void test_is_any_lsb_one() {
 	assert(is_any_lsb_one(INT_MAX) == 1);
 }
 
-/* 2.61 B) Returns true if any bit of most significant byte in x is 0 */ 
+/* 2.61 D) Returns true if any bit of most significant byte in x is 0 */ 
 bool is_any_msb_zero(int x) {
 	int shift_val = (sizeof(int) -1) << 3;
 	int xright = x >> shift_val;
@@ -165,6 +173,18 @@ void test_is_any_msb_zero() {
 	assert(is_any_msb_zero(-1) == 0);
 	assert(is_any_msb_zero(INT_MIN) == 1);
 	assert(is_any_msb_zero(INT_MAX) == 1);
+}
+
+/*
+* HELPER 
+* 1 => 111111111111111111
+* 0 => 000000000000000000
+*/
+unsigned full_mask_of_size(bool all_one, size_t size) {
+	// 1 => 1000000000000... => 011111111111111... => 1111111...11110 => 111111111111...111111
+	// 0 => 0000000000000... => 000000000000000... => 0000000...00000 => 000000000000...000000
+	unsigned all_mask = (((all_one << (size -1)) - all_one) << 1) + all_one;
+	return all_mask;
 }
 
 // 2.62
@@ -196,9 +216,7 @@ unsigned srl(unsigned x, int k) {
 	// if k=0, there's no change
 	unsigned is_changed_at_all = k && 1;
 
-	// 1 => 1000000000000... => 011111111111111... => 1111111...11110 => 111111111111...111111
-	// 0 => 0000000000000... => 000000000000000... => 0000000...00000 => 000000000000...000000
-	unsigned all_mask = (((is_changed_at_all << (bits -1)) -is_changed_at_all) << 1) + is_changed_at_all;
+	unsigned all_mask = full_mask_of_size(is_changed_at_all, bits);
 
 	// 0 if is_changed_at_all=0 else no change.
 	untouched_bits = untouched_bits & all_mask;
@@ -228,9 +246,7 @@ int sra(int x, int k) {
 	int signed_bit_pos = bits - k -1;
 	int signed_bit = ((1 << signed_bit_pos) & xsra) && 1;
 
-	// 1 => 1000000000000... => 011111111111111... => 1111111...11110 => 111111111111...111111
-	// 0 => 0000000000000... => 000000000000000... => 0000000...00000 => 000000000000...000000
-	unsigned all_mask_signed_bit = (((signed_bit << (bits -1)) -signed_bit) << 1) + signed_bit;
+	unsigned all_mask_signed_bit = full_mask_of_size(signed_bit, bits);
 
 
 	unsigned untouched_bits = bits - k;
@@ -238,9 +254,7 @@ int sra(int x, int k) {
 	// if k=0, there's no change
 	unsigned is_changed_at_all = k && 1;
 
-	// 1 => 1000000000000... => 011111111111111... => 1111111...11110 => 111111111111...111111
-	// 0 => 0000000000000... => 000000000000000... => 0000000...00000 => 000000000000...000000
-	unsigned all_mask = (((is_changed_at_all << (bits -1)) -1) << 1) + is_changed_at_all;
+	unsigned all_mask = full_mask_of_size(is_changed_at_all, bits);
 
 	// 0 if is_changed_at_all=0 else no change.
 	untouched_bits = untouched_bits & all_mask;
@@ -263,33 +277,68 @@ void test_sra() {
 bool any_odd_one(unsigned x) {
 	// TODO: can this be simplified?
 	return 
-	(x & 1) ||
-	(x & 1<<2) ||  	
-	(x & 1<< 4) ||  	
-	(x & 1<< 6) ||  	
-	(x & 1 << 8) ||  	
-	(x & 1 << 10) ||  	
-	(x & 1 << 12) ||  	
-	(x & 1 << 14) ||  	
-	(x & 1 << 16) ||  	
-	(x & 1 << 18) ||  	
-	(x & 1 << 20) ||  	
-	(x & 1 << 22) ||  	
-	(x & 1 << 24) ||  	
-	(x & 1 << 26) ||  	
-	(x & 1 << 28) ||  	
-	(x & 1 << 30);  	
+	(x & 1<<1) ||
+	(x & 1<<3) ||  	
+	(x & 1<< 5) ||  	
+	(x & 1<< 7) ||  	
+	(x & 1 << 9) ||  	
+	(x & 1 << 11) ||  	
+	(x & 1 << 13) ||  	
+	(x & 1 << 15) ||  	
+	(x & 1 << 17) ||  	
+	(x & 1 << 19) ||  	
+	(x & 1 << 21) ||  	
+	(x & 1 << 23) ||  	
+	(x & 1 << 25) ||  	
+	(x & 1 << 27) ||  	
+	(x & 1 << 29) ||  	
+	(x & 1 << 31);  	
+}
+
+bool any_odd_one_sol(unsigned x) {
+	return !!(0xAAAAAAAA & x);
 }
 
 void test_any_odd_one() {
-	munit_assert_int(any_odd_one(1), ==, 1);
+	munit_assert_int(any_odd_one(1), ==, 0);
 	munit_assert_int(any_odd_one(0), ==, 0);
 	munit_assert_int(any_odd_one(UINT_MAX), ==, 1);
+
+	munit_assert_int(any_odd_one_sol(1), ==, 0);
+	munit_assert_int(any_odd_one_sol(0), ==, 0);
+	munit_assert_int(any_odd_one_sol(UINT_MAX), ==, 1);
+
 }
 
 // 2.65 (4star)
 int odd_ones(unsigned x) {
-	//
+	unsigned curr = x;
+
+	// initial 16
+	unsigned half1 = curr >> 16;
+	curr = half1^curr;
+
+	unsigned half2 = curr >> 8;
+	curr = half2^curr;
+
+	unsigned half3 = curr >> 4;
+	curr = half3^curr;
+	
+	unsigned half4 = curr >> 2;
+	curr = half4^curr;
+
+	unsigned half5 = curr >> 1;
+	curr = half5^curr;
+
+	return curr & 1;
+}
+
+int odd_ones_alternate(unsigned x) {
+	int sum = 0;
+	for (int i = 0; i < 32; i++) {
+		sum += ((1 << i) & x) && 1;
+	}
+	return (sum%2)==1;
 }
 
 void test_odd_ones() {
@@ -297,39 +346,141 @@ void test_odd_ones() {
 	munit_assert_int(odd_ones(0), ==, 0);
 	munit_assert_int(odd_ones(UINT_MAX), ==, 0);
 	munit_assert_int(odd_ones(UINT_MAX-1), ==, 1);
+
+	// full-search (takes somewhere in order of 10 minutes)
+	unsigned end = 0xFFFFFFFF;
+
+	// quick-search
+	end = 0xFFFFF;
+
+	for(unsigned i = 0; i < end; i ++) {
+		if (end == 0xFFFFFFFF && i%0xFFFFFF == 0) {
+			printf("%u\n", i);
+		}
+		munit_assert_int(odd_ones(i), ==, odd_ones_alternate(i));
+	}
 }
+
+
+/* 2.66 
+* Generate mask indicating leftmost 1 in x. Assume w=32.
+* For example, OxFFOO —>0x8000, and 0x6600 ——>0x4000.
+* If x = 0, then return 0.
+*/
+int leftmost_one(unsigned x) {
+	unsigned org_x = x;
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return (x >> 1) + (!!org_x);
+}
+
+void test_leftmost_one() {
+	munit_assert_uint(leftmost_one(0xff00), ==, 0x8000);
+	munit_assert_uint(leftmost_one(0x6600), ==, 0x4000);
+}
+
+
+/*
+* 2.67
+* A. The code shifts by more then (0, w-1). C does not document this behaviour.
+* B)
+*/
+int int_size_is_32_b() {
+
+	// Set most significant bit (msb) of 32-bit machines
+	int set_msb = 1 << 31;
+
+	// Add itself twice and 
+	int beyond_msb = (set_msb + set_msb);
+
+	return set_msb && !beyond_msb;
+
+}
+
+/*
+* 2.67 C)
+*/
+int int_size_is_32_c() {
+	int set_31_msb = ((1 << 15) << 15) << 1;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshift-overflow"
+	int beyond_msb = ((1 << 15) << 15) << 2;
+#pragma GCC diagnostic pop
+	return set_31_msb && !beyond_msb;
+}
+
+/*
+* 2.68)
+* Mask with least signficant n bits set to 1
+* Examples: n = 6 ——>Ox3F, n = 17 ——>Ox1FFFF
+* Assume 1 <= n <= w
+*/
+int lower_one_mask(int n) {
+	return full_mask_of_size(1, n);
+}
+
+void test_lower_one_mask(){
+	munit_assert_int(lower_one_mask(6), ==, 0x3f);
+	munit_assert_int(lower_one_mask(17), ==, 0x1ffff);
+}
+
+
 
 void run_tests() {
+	int test_count = 0;
 	test_replace_byte();
-	printf("1 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_is_any_bit_one();
-	printf("2 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_is_any_bit_zero();
-	printf("3 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_is_any_lsb_one();
-	printf("4 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_is_any_msb_zero();
-	printf("5 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_int_shifts_are_arithmetic();
-	printf("6 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_srl();
-	printf("7 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_sra();
-	printf("8 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_any_odd_one();
-	printf("9 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 
 	test_odd_ones();
-	printf("10 Tests passed!\n");
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
+
+	test_leftmost_one();
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
+	
+	test_lower_one_mask();
+	test_count += 1;
+	printf("%2d Tests passed!\n", test_count);
 }
+
 
 int get_one() {
 	return 1;
