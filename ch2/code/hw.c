@@ -85,6 +85,11 @@ bool is_little_endian() {
 }
 // TODO: 2.59 (not sure if type int can be assumed, or how can it be done
 // without that.)
+unsigned merge_bytes(unsigned x, unsigned y) {
+  unsigned last_byte = x & 0xff;
+  y &= ~0xff;
+  return y | last_byte;
+}
 
 // 2.60
 unsigned replace_byte(unsigned x, int i, unsigned char b) {
@@ -1539,6 +1544,9 @@ int main() {
   // int res = float_f2i(i);
   // munit_assert_int(float_f2i(i), ==, (int)u2f(i));
   // return 1;
+  show_float(0.000000000000000000001);
+  show_float(-1.0);
+  return 1;
 
   run_tests();
 
